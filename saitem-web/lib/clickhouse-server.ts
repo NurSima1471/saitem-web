@@ -20,10 +20,9 @@ export function tabloAdi() {
 }
 
 export async function clickhouseQuery(sql: string): Promise<any[]> {
-  const url =
-    `http://${CH_HOST}:${CH_PORT}/?query=${encodeURIComponent(sql)}` +
-    `&user=${encodeURIComponent(CH_USER)}&password=${encodeURIComponent(CH_PASS)}` +
-    `&nocache=${Date.now()}`;
+const url =
+  `http://${CH_HOST}:${CH_PORT}/?query=${encodeURIComponent(sql)}` +
+  `&user=${encodeURIComponent(CH_USER)}&password=${encodeURIComponent(CH_PASS)}`;
 
   const res = await fetch(url, { cache: "no-store" });
   if (!res.ok) {
