@@ -1,4 +1,4 @@
-import type { TelemetriKaydi } from "@/lib/api";
+import { saatDakikaSaniyeMs, kayitZamaniMs, type TelemetriKaydi } from "@/lib/api";
 
 // elapsed_ms (milisaniye) -> "dk:sn.milisaniye" okunakli formatina cevirir
 function formatElapsed(ms: number) {
@@ -8,6 +8,13 @@ function formatElapsed(ms: number) {
   const sn = totalSec % 60;
   const msKalan = Math.floor(ms % 1000);
   return `${String(dk).padStart(2, "0")}:${String(sn).padStart(2, "0")}.${String(msKalan).padStart(3, "0")}`;
+}
+
+// Gercek zamani saat:dakika:saniye.milisaniye (16:33:32.481) formatinda gosterir.
+function formatTimestamp(kayit: TelemetriKaydi) {
+  const ms = kayitZamaniMs(kayit);
+  if (isNaN(ms)) return kayit.timestamp || "-";
+  return saatDakikaSaniyeMs(ms);
 }
 
 export function LiveTable({ kayitlar, baslik = "Live Telemetry Feed" }: { kayitlar: TelemetriKaydi[]; baslik?: string }) {
@@ -33,7 +40,8 @@ export function LiveTable({ kayitlar, baslik = "Live Telemetry Feed" }: { kayitl
         <table className="w-full text-sm">
           <thead className="sticky top-0 bg-[var(--bg-panel)] text-[10px] uppercase tracking-wider text-[var(--text-dim)]">
             <tr>
-              <th className="text-left font-medium px-4 py-2">Time</th>
+              <th className="text-left font-medium px-4 py-2">Clock (H:M:S.ms)</th>
+              <th className="text-left font-medium px-4 py-2">Elapsed</th>
               <th className="text-right font-medium px-4 py-2">Speed (km/h)</th>
               <th className="text-right font-medium px-4 py-2">Battery (%)</th>
               <th className="text-right font-medium px-4 py-2">Current (A)</th>
@@ -46,7 +54,7 @@ export function LiveTable({ kayitlar, baslik = "Live Telemetry Feed" }: { kayitl
           <tbody className="font-mono">
             {kayitlar.length === 0 && (
               <tr>
-                <td colSpan={8} className="text-center text-[var(--text-dim)] py-8">
+                <td colSpan={9} className="text-center text-[var(--text-dim)] py-8">
                   No data yet
                 </td>
               </tr>
@@ -60,6 +68,9 @@ export function LiveTable({ kayitlar, baslik = "Live Telemetry Feed" }: { kayitl
                     : "hover:bg-[var(--bg-panel-raised)]/60"
                 }`}
               >
+                <td className={`px-4 py-2 ${k.gecikti ? "text-[var(--warn)]" : "text-[var(--text-primary)]"}`}>
+                  {formatTimestamp(k)}
+                </td>
                 <td
                   className={`px-4 py-2 ${
                     k.gecikti

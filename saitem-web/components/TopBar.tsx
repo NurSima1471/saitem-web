@@ -2,16 +2,17 @@
 
 import { useState } from "react";
 import { Logo } from "./Logo";
-import { sonUcSaatiGetir, raceCsvOlustur, dosyaIndir } from "@/lib/api";
+import { sonUcSaatiGetir, raceCsvOlustur, dosyaIndir, saatDakikaSaniyeMs } from "@/lib/api";
 
 type TopBarProps = {
   connected: boolean;
-  lastUpdate: string;
+  lastUpdateMs: number | null;
   pingMs: number | null;
 };
 
-export function TopBar({ connected, lastUpdate, pingMs }: TopBarProps) {
+export function TopBar({ connected, lastUpdateMs, pingMs }: TopBarProps) {
   const [exportYukleniyor, setExportYukleniyor] = useState(false);
+  const lastUpdate = lastUpdateMs !== null ? saatDakikaSaniyeMs(lastUpdateMs) : "--:--:--.---";
 
   async function exportEt() {
     setExportYukleniyor(true);
@@ -33,7 +34,7 @@ export function TopBar({ connected, lastUpdate, pingMs }: TopBarProps) {
 
   return (
     <div className="border-b border-[var(--line)] bg-[var(--bg-panel)]">
-      <div className="flex items-center justify-between gap-3 px-3 sm:px-6 py-3">
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 px-3 sm:px-6 py-3">
         <div className="flex items-center gap-3 sm:gap-8 min-w-0">
           <Logo className="h-6 sm:h-8 w-auto shrink-0" />
           <div className="hidden lg:flex items-center gap-6 text-xs font-mono text-[var(--text-secondary)] whitespace-nowrap">
@@ -51,7 +52,9 @@ export function TopBar({ connected, lastUpdate, pingMs }: TopBarProps) {
           </div>
         </div>
 
-        <div className="flex items-center gap-2 sm:gap-4 shrink-0">
+        {/* Bu blok her zaman kendi satirina sarabilir (flex-wrap) - dar ekranlarda
+            Logo ile yer kavgasina girip disariya tasip gizlenmek yerine alta iner. */}
+        <div className="flex items-center gap-2 sm:gap-4">
           <button
             onClick={exportEt}
             disabled={exportYukleniyor}
@@ -60,11 +63,13 @@ export function TopBar({ connected, lastUpdate, pingMs }: TopBarProps) {
             {exportYukleniyor ? "Exporting..." : "Export CSV"}
           </button>
 
-          <div className="text-right hidden sm:block">
+          <div className="text-right">
             <div className="text-[10px] tracking-[0.18em] text-[var(--text-dim)] uppercase">
               Last Update
             </div>
-            <div className="font-mono text-sm text-[var(--text-primary)]">{lastUpdate}</div>
+            <div className="font-mono text-xs sm:text-sm text-[var(--text-primary)] tabular-nums whitespace-nowrap">
+              {lastUpdate}
+            </div>
           </div>
         </div>
       </div>

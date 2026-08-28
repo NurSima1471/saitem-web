@@ -14,6 +14,9 @@ import {
   sonTelemetriVerileri,
   suruslariGetir,
   aralikVerileri,
+  sonUcSaatiGetir,
+  raceCsvOlustur,
+  dosyaIndir,
   type TelemetriKaydi,
   type SurusOzeti,
 } from "@/lib/api";
@@ -24,6 +27,7 @@ const SEKMELER = [
   { id: "canli", label: "Live" },
   { id: "grafikler", label: "Charts" },
   { id: "suruşler", label: "Previous Drives" },
+  { id: "gecmis", label: "History (3h)" },
 ];
 
 export default function DashboardPage() {
@@ -36,13 +40,19 @@ export default function DashboardPage() {
   const [kayitlar, setKayitlar] = useState<TelemetriKaydi[]>([]);
   const [connected, setConnected] = useState(false);
   const [pingMs, setPingMs] = useState<number | null>(null);
-  const [lastUpdate, setLastUpdate] = useState("--:--:--");
+  const [lastUpdateMs, setLastUpdateMs] = useState<number | null>(null);
 
   // sürüşler
   const [suruslar, setSuruslar] = useState<SurusOzeti[]>([]);
   const [seciliSurus, setSeciliSurus] = useState<number | null>(null);
   const [surusKayitlari, setSurusKayitlari] = useState<TelemetriKaydi[]>([]);
   const [surusYukleniyor, setSurusYukleniyor] = useState(false);
+
+  // gecmis (son 3 saat)
+  const [gecmisKayitlar, setGecmisKayitlar] = useState<TelemetriKaydi[]>([]);
+  const [gecmisYukleniyor, setGecmisYukleniyor] = useState(false);
+  const [gecmisHata, setGecmisHata] = useState<string | null>(null);
+  const [gecmisExportYukleniyor, setGecmisExportYukleniyor] = useState(false);
 
   useEffect(() => {
     if (sessionStorage.getItem("saitem_auth") !== "1") {
@@ -59,7 +69,7 @@ export default function DashboardPage() {
       setKayitlar(veri);
       setConnected(true);
       setPingMs(Math.round(performance.now() - basla));
-      setLastUpdate(new Date().toLocaleTimeString("tr-TR"));
+      setLastUpdateMs(Date.now());
     } catch {
       setConnected(false);
       setPingMs(null);
@@ -88,6 +98,42 @@ export default function DashboardPage() {
       .finally(() => setSurusYukleniyor(false));
   }, [seciliSurus, suruslar]);
 
+  const gecmisYukle = useCallback(async () => {
+    setGecmisYukleniyor(true);
+    setGecmisHata(null);
+    try {
+      const veri = await sonUcSaatiGetir();
+      setGecmisKayitlar(veri);
+    } catch (e) {
+      setGecmisHata(e instanceof Error ? e.message : String(e));
+    } finally {
+      setGecmisYukleniyor(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!ready || tab !== "gecmis") return;
+    gecmisYukle();
+  }, [ready, tab, gecmisYukle]);
+
+  async function gecmisExportEt() {
+    setGecmisExportYukleniyor(true);
+    try {
+      const kayitlar = gecmisKayitlar.length > 0 ? gecmisKayitlar : await sonUcSaatiGetir();
+      if (kayitlar.length === 0) {
+        alert("Son 3 saat icinde kayit bulunamadi.");
+        return;
+      }
+      const csv = raceCsvOlustur(kayitlar);
+      const zaman = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
+      dosyaIndir(`RaceLog_History_${zaman}.csv`, csv);
+    } catch (e) {
+      alert("Export hatasi: " + (e instanceof Error ? e.message : String(e)));
+    } finally {
+      setGecmisExportYukleniyor(false);
+    }
+  }
+
   if (!ready) return null;
 
   const son = kayitlar[0];
@@ -96,7 +142,7 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-[var(--bg-void)] bg-grid">
-      <TopBar connected={connected} lastUpdate={lastUpdate} pingMs={pingMs} />
+      <TopBar connected={connected} lastUpdateMs={lastUpdateMs} pingMs={pingMs} />
       <Tabs active={tab} onChange={setTab} items={SEKMELER} />
 
       <main className="max-w-6xl mx-auto px-3 sm:px-6 py-5 sm:py-8 rise-in">
@@ -160,6 +206,40 @@ export default function DashboardPage() {
                 </div>
               )}
             </div>
+          </div>
+        )}
+
+        {tab === "gecmis" && (
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="text-xs tracking-[0.16em] uppercase text-[var(--text-secondary)]">
+                Last 3 hours ({gecmisKayitlar.length} records)
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={gecmisYukle}
+                  disabled={gecmisYukleniyor}
+                  className="text-[11px] uppercase font-semibold border border-[var(--line)] text-[var(--text-secondary)] hover:border-[var(--accent)] hover:text-[var(--accent)] disabled:opacity-50 transition-colors rounded-md px-3 py-1.5"
+                >
+                  {gecmisYukleniyor ? "Loading..." : "Refresh"}
+                </button>
+                <button
+                  onClick={gecmisExportEt}
+                  disabled={gecmisExportYukleniyor}
+                  className="text-[11px] uppercase font-semibold border border-[var(--accent)] text-[var(--accent)] hover:bg-[var(--accent)] hover:text-[#0a0a0a] disabled:opacity-50 transition-colors rounded-md px-3 py-1.5"
+                >
+                  {gecmisExportYukleniyor ? "Exporting..." : "Export CSV"}
+                </button>
+              </div>
+            </div>
+
+            {gecmisHata && (
+              <div className="text-xs text-[var(--danger)] border border-[var(--danger)]/30 bg-[var(--danger)]/10 rounded-md px-3 py-2">
+                {gecmisHata}
+              </div>
+            )}
+
+            <LiveTable kayitlar={gecmisKayitlar} baslik="History (Last 3 Hours)" />
           </div>
         )}
       </main>

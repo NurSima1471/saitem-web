@@ -32,6 +32,22 @@ function parseTarih(s: string): number {
   return Date.parse(s.replace(" ", "T") + "Z");
 }
 
+// Saat:dakika:saniye.ms formatinda (24 saat, her zaman saat dahil) - ana ekranda
+// ve tabloda kullanilan ortak zaman formatlayici.
+export function saatDakikaSaniyeMs(msEpoch: number): string {
+  if (!Number.isFinite(msEpoch)) return "--:--:--.---";
+  const d = new Date(msEpoch);
+  const hh = String(d.getHours()).padStart(2, "0");
+  const mm = String(d.getMinutes()).padStart(2, "0");
+  const ss = String(d.getSeconds()).padStart(2, "0");
+  const ms = String(d.getMilliseconds()).padStart(3, "0");
+  return `${hh}:${mm}:${ss}.${ms}`;
+}
+
+export function kayitZamaniMs(k: { timestamp: string }): number {
+  return parseTarih(k.timestamp);
+}
+
 function satirdanKayit(row: any): TelemetriKaydi {
   const ts = String(row.timestamp ?? "");
   const ins = String(row.inserted_at ?? "");
@@ -58,17 +74,17 @@ function satirdanKayit(row: any): TelemetriKaydi {
   };
 }
 
-// 1. CANLI VERİ: Artık doğrudan oluşturduğumuz güvenli api'ye (route.ts) bağlanıyor.
+// 1. CANLI VERİ
 export async function sonTelemetriVerileri(adet = 20): Promise<TelemetriKaydi[]> {
   try {
     const res = await fetch(`/api/telemetri?adet=${adet}`, { cache: "no-store" });
     const json = await res.json();
-    
+
     if (!json.success) {
       console.error("Backend'den veri alınamadı:", json.error);
       return [];
     }
-    
+
     return json.data.map(satirdanKayit).reverse(); // Eskiden yeniye sıralıyoruz
   } catch (error) {
     console.error("Bağlantı hatası:", error);
@@ -76,25 +92,47 @@ export async function sonTelemetriVerileri(adet = 20): Promise<TelemetriKaydi[]>
   }
 }
 
-// ----------------------------------------------------------------------
-// ⚠️ ÖNEMLİ NOT:
-// Güvenliği sağlamak için arayüzden veritabanı şifrelerini kaldırdığımızdan,
-// aşağıdaki geçmiş sürüşleri getiren fonksiyonlar geçici olarak boş liste
-// döndürecek şekilde ayarlandı (sistemin hata verip çökmemesi için). 
-// Eğer canlı yarış ekranı dışında "Geçmiş Sürüşler" ekranını da aktif olarak 
-// kullanıyorsan, aynı route.ts mantığıyla onlar için de API klasörleri açman gerekecek.
-// ----------------------------------------------------------------------
-
+// 2. BELİRLİ ARALIK (Previous Drives detayı için)
 export async function aralikVerileri(baslangic: string, bitis: string, adet = 2000): Promise<TelemetriKaydi[]> {
-  return []; 
+  try {
+    const qs = new URLSearchParams({ baslangic, bitis, adet: String(adet) });
+    const res = await fetch(`/api/telemetri/range?${qs.toString()}`, { cache: "no-store" });
+    const json = await res.json();
+    if (!json.success) {
+      console.error("Aralik verisi alinamadi:", json.error);
+      return [];
+    }
+    return (json.data as any[]).map(satirdanKayit);
+  } catch (error) {
+    console.error("Aralik verisi baglanti hatasi:", error);
+    return [];
+  }
 }
 
+// 3. GEÇMİŞ SÜRÜŞLER LİSTESİ
 export async function suruslariGetir(): Promise<SurusOzeti[]> {
-  return [];
+  try {
+    const res = await fetch("/api/telemetri/drives", { cache: "no-store" });
+    const json = await res.json();
+    if (!json.success) {
+      console.error("Suruşler alinamadi:", json.error);
+      return [];
+    }
+    return json.data as SurusOzeti[];
+  } catch (error) {
+    console.error("Suruşler baglanti hatasi:", error);
+    return [];
+  }
 }
 
+// 4. SON 3 SAAT (History sekmesi + CSV export icin)
 export async function sonUcSaatiGetir(): Promise<TelemetriKaydi[]> {
-  return [];
+  const res = await fetch("/api/telemetri/last3h", { cache: "no-store" });
+  const json = await res.json();
+  if (!json.success) {
+    throw new Error(json.error || "Son 3 saatlik veri alinamadi");
+  }
+  return (json.data as any[]).map(satirdanKayit);
 }
 
 // YARIŞ CSV EXPORT (Aynen korundu)
