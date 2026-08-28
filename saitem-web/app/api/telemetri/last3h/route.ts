@@ -15,7 +15,7 @@ export async function GET() {
       return NextResponse.json({ success: true, data: [] });
     }
 
-    const referansMs = Date.parse(String(sonRows[0].timestamp).replace(" ", "T") + "Z");
+    const referansMs = Date.parse(String(sonRows[0].timestamp).replace(" ", "T"));
     if (isNaN(referansMs)) {
       return NextResponse.json({ success: true, data: [] });
     }

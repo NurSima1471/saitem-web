@@ -14,7 +14,7 @@ export async function GET() {
       return NextResponse.json({ success: true, data: [] });
     }
 
-    const parseTarih = (s: string) => Date.parse(s.replace(" ", "T") + "Z");
+    const parseTarih = (s: string) => Date.parse(s.replace(" ", "T"));
 
     const suruslar: { baslangic: string; bitis: string; kayitSayisi: number; maxSpeed: number }[] = [];
     let mevcut = {
