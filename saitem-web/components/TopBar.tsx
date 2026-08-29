@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Logo } from "./Logo";
 import { sonUcSaatiGetir, raceCsvOlustur, dosyaIndir, saatDakikaSaniyeMs } from "@/lib/api";
 
@@ -11,7 +12,9 @@ type TopBarProps = {
 };
 
 export function TopBar({ connected, lastUpdateMs, pingMs }: TopBarProps) {
+  const router = useRouter();
   const [exportYukleniyor, setExportYukleniyor] = useState(false);
+  const [cikisYapiliyor, setCikisYapiliyor] = useState(false);
   const lastUpdate = lastUpdateMs !== null ? saatDakikaSaniyeMs(lastUpdateMs) : "--:--:--.---";
 
   async function exportEt() {
@@ -32,11 +35,21 @@ export function TopBar({ connected, lastUpdateMs, pingMs }: TopBarProps) {
     }
   }
 
+  async function cikisYap() {
+    setCikisYapiliyor(true);
+    try {
+      await fetch("/api/logout", { method: "POST" });
+    } finally {
+      router.push("/login");
+      router.refresh();
+    }
+  }
+
   return (
     <div className="border-b border-[var(--line)] bg-[var(--bg-panel)]">
       <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 px-3 sm:px-6 py-3">
         <div className="flex items-center gap-3 sm:gap-8 min-w-0">
-          <Logo className="h-6 sm:h-8 w-auto shrink-0" />
+          <Logo className="h-6 sm:h-8 w-auto shrink-0" subtitle="SAGUAR TELEMETRY" />
           <div className="hidden lg:flex items-center gap-6 text-xs font-mono text-[var(--text-secondary)] whitespace-nowrap">
             <span>
               PING <span className="text-[var(--text-primary)]">{pingMs ?? "--"} ms</span>
@@ -61,6 +74,14 @@ export function TopBar({ connected, lastUpdateMs, pingMs }: TopBarProps) {
             className="text-[10px] sm:text-[11px] tracking-wide uppercase font-semibold border border-[var(--accent)] text-[var(--accent)] hover:bg-[var(--accent)] hover:text-[#0a0a0a] disabled:opacity-50 disabled:cursor-not-allowed transition-colors rounded-md px-2.5 sm:px-3 py-1.5 whitespace-nowrap"
           >
             {exportYukleniyor ? "Exporting..." : "Export CSV"}
+          </button>
+
+          <button
+            onClick={cikisYap}
+            disabled={cikisYapiliyor}
+            className="text-[10px] sm:text-[11px] tracking-wide uppercase font-semibold border border-[var(--line)] text-[var(--text-secondary)] hover:border-[var(--danger)] hover:text-[var(--danger)] disabled:opacity-50 transition-colors rounded-md px-2.5 sm:px-3 py-1.5 whitespace-nowrap"
+          >
+            {cikisYapiliyor ? "..." : "Log Out"}
           </button>
 
           <div className="text-right">

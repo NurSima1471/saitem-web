@@ -29,7 +29,7 @@ export type SurusOzeti = {
 const GECIKME_ESIGI_SN = 8;
 
 function parseTarih(s: string): number {
-  return Date.parse(s.replace(" ", "T"));
+  return Date.parse(s.replace(" ", "T") + "Z");
 }
 
 // Saat:dakika:saniye.ms formatinda (24 saat, her zaman saat dahil) - ana ekranda
@@ -135,13 +135,37 @@ export async function sonUcSaatiGetir(): Promise<TelemetriKaydi[]> {
   return (json.data as any[]).map(satirdanKayit);
 }
 
-// YARIŞ CSV EXPORT (Aynen korundu)
+// YARIŞ CSV EXPORT
 export function raceCsvOlustur(kayitlar: TelemetriKaydi[]): string {
-  const satirlar = ["zaman_ms;hiz_kmh;T_bat_C;V_bat_C;kalan_enerji_Wh"];
+  const satirlar = [
+    "tarih;saat;dakika;saniye;ms;yaris_suresi_ms;hiz_kmh;T_bat_C;V_bat_C;kalan_enerji_Wh",
+  ];
+
+  if (kayitlar.length === 0) return satirlar.join("\n");
+
+  const baslangicMs = kayitZamaniMs(kayitlar[0]);
+
   for (const k of kayitlar) {
+    const ms = kayitZamaniMs(k);
+    const d = new Date(ms);
+
+    const tarih = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
+      d.getDate()
+    ).padStart(2, "0")}`;
+    const saat = String(d.getHours()).padStart(2, "0");
+    const dakika = String(d.getMinutes()).padStart(2, "0");
+    const saniye = String(d.getSeconds()).padStart(2, "0");
+    const msKisim = String(d.getMilliseconds()).padStart(3, "0");
+    const yarisSuresiMs = Math.round(ms - baslangicMs);
+
     satirlar.push(
       [
-        Math.round(k.elapsedMs),
+        tarih,
+        saat,
+        dakika,
+        saniye,
+        msKisim,
+        yarisSuresiMs,
         k.speed.toFixed(2),
         k.temperature.toFixed(2),
         k.voltage.toFixed(2),
@@ -149,7 +173,14 @@ export function raceCsvOlustur(kayitlar: TelemetriKaydi[]): string {
       ].join(";")
     );
   }
+
   return satirlar.join("\n");
+}
+
+// Bir epoch ms degerini ClickHouse'un bekledigi "YYYY-MM-DD HH:MM:SS" formatina
+// (DB UTC tuttugu icin UTC olarak) cevirir - aralikVerileri() ile kullanmak icin.
+export function isoToChStr(ms: number): string {
+  return new Date(ms).toISOString().slice(0, 19).replace("T", " ");
 }
 
 // DOSYA İNDİRME (Aynen korundu)
