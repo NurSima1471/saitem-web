@@ -5,7 +5,7 @@ import { saatDakikaSaniyeMs } from "@/lib/api";
 
 function formatElapsedBuyuk(ms: number) {
   if (ms < 0) ms = 0;
-  return Math.round(ms).toLocaleString("en-US") + " ms";
+    return Math.round(ms) + " ms";
 }
 
 export function LiveClock({ startTs, endTs }: { startTs: number | null; endTs: number | null }) {

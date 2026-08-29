@@ -2,7 +2,7 @@ import { saatDakikaSaniyeMs, kayitZamaniMs, type TelemetriKaydi } from "@/lib/ap
 
 function formatElapsed(ms: number) {
   if (!Number.isFinite(ms) || ms < 0) ms = 0;
-  return Math.round(ms).toLocaleString("en-US");
+    return String(Math.round(ms));
 }
 
 // Gercek zamani saat:dakika:saniye.milisaniye (16:33:32.481) formatinda gosterir.
