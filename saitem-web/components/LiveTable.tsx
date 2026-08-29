@@ -1,13 +1,8 @@
 import { saatDakikaSaniyeMs, kayitZamaniMs, type TelemetriKaydi } from "@/lib/api";
 
-// elapsed_ms (milisaniye) -> "dk:sn.milisaniye" okunakli formatina cevirir
 function formatElapsed(ms: number) {
   if (!Number.isFinite(ms) || ms < 0) ms = 0;
-  const totalSec = Math.floor(ms / 1000);
-  const dk = Math.floor(totalSec / 60);
-  const sn = totalSec % 60;
-  const msKalan = Math.floor(ms % 1000);
-  return `${String(dk).padStart(2, "0")}:${String(sn).padStart(2, "0")}.${String(msKalan).padStart(3, "0")}`;
+  return Math.round(ms).toLocaleString("en-US");
 }
 
 // Gercek zamani saat:dakika:saniye.milisaniye (16:33:32.481) formatinda gosterir.
