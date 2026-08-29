@@ -134,14 +134,13 @@ export default function DashboardPage() {
     setGecmisHata(null);
     try {
       const veri = await sonUcSaatiGetir();
-      setGecmisKayitlar(veri);
+      setGecmisKayitlar([...veri].reverse());
     } catch (e) {
       setGecmisHata(e instanceof Error ? e.message : String(e));
     } finally {
       setGecmisYukleniyor(false);
     }
   }, []);
-
   useEffect(() => {
     if (!ready || tab !== "gecmis") return;
     gecmisYukle();
