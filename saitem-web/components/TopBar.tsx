@@ -49,7 +49,7 @@ export function TopBar({ connected, lastUpdateMs, pingMs }: TopBarProps) {
     <div className="border-b border-[var(--line)] bg-[var(--bg-panel)]">
       <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 px-3 sm:px-6 py-3">
         <div className="flex items-center gap-3 sm:gap-8 min-w-0">
-          <Logo className="h-6 sm:h-8 w-auto shrink-0" subtitle="SAGUAR TELEMETRY" />
+          <Logo className="h-6 sm:h-8 w-auto shrink-0" />
           <div className="hidden lg:flex items-center gap-6 text-xs font-mono text-[var(--text-secondary)] whitespace-nowrap">
             <span>
               PING <span className="text-[var(--text-primary)]">{pingMs ?? "--"} ms</span>

@@ -49,7 +49,7 @@ export default function LoginPage() {
 
       <div className="relative z-10 w-full max-w-sm rise-in">
         <div className="flex flex-col items-center mb-8">
-          <Logo className="h-10 w-auto mb-2" subtitle="SAGUAR TELEMETRY" />
+          <Logo className="h-10 w-auto mb-2" />
           <span className="text-[11px] tracking-[0.25em] text-[var(--text-dim)] uppercase">
             Elektrikli Araç Telemetri Sistemi
           </span>
