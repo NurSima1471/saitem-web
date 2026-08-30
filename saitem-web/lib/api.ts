@@ -135,11 +135,11 @@ export async function sonUcSaatiGetir(): Promise<TelemetriKaydi[]> {
   return (json.data as any[]).map(satirdanKayit);
 }
 
-// YARIŞ CSV EXPORT
+
+//yarış csv export
+
 export function raceCsvOlustur(kayitlar: TelemetriKaydi[]): string {
-  const satirlar = [
-    "tarih;saat;dakika;saniye;ms;yaris_suresi_ms;hiz_kmh;T_bat_C;V_bat_C;kalan_enerji_Wh",
-  ];
+  const satirlar = ["tarih;saat;yaris_suresi_ms;hiz_kmh;T_bat_C;V_bat_C;kalan_enerji_Wh"];
 
   if (kayitlar.length === 0) return satirlar.join("\n");
 
@@ -152,19 +152,15 @@ export function raceCsvOlustur(kayitlar: TelemetriKaydi[]): string {
     const tarih = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
       d.getDate()
     ).padStart(2, "0")}`;
-    const saat = String(d.getHours()).padStart(2, "0");
-    const dakika = String(d.getMinutes()).padStart(2, "0");
-    const saniye = String(d.getSeconds()).padStart(2, "0");
-    const msKisim = String(d.getMilliseconds()).padStart(3, "0");
+    const saat = [d.getHours(), d.getMinutes(), d.getSeconds()]
+      .map((n) => String(n).padStart(2, "0"))
+      .join(".");
     const yarisSuresiMs = Math.round(ms - baslangicMs);
 
     satirlar.push(
       [
         tarih,
         saat,
-        dakika,
-        saniye,
-        msKisim,
         yarisSuresiMs,
         k.speed.toFixed(2),
         k.temperature.toFixed(2),
